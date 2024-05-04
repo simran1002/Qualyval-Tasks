@@ -64,6 +64,7 @@ async function fetchWeatherAndUpdateSheet() {
     }
 }
 
+
 async function syncSheetsToAirtable() {
     try {
         const response = await sheets.spreadsheets.values.get({
@@ -73,19 +74,29 @@ async function syncSheetsToAirtable() {
 
         const rows = response.data.values || [];
         console.log(`Syncing ${rows.length} rows to Airtable.`);
-        for (const row of rows) {
-            const [city, date, tempC, tempF, summary] = row;
+
+        // Batch records in sets of 10
+        for (let i = 0; i < rows.length; i += 10) {
+            const batch = rows.slice(i, i + 10).map(row => {
+                const [city, date, tempC, tempF, summary] = row;
+                return {
+                    fields: {
+                        "City": city,
+                        "Date": date,
+                        "Temperature (C)": tempC,
+                        "Temperature (F)": tempF,
+                        "Weather Summary": summary
+                    }
+                };
+            });
+
             try {
-                const result = await table.create({
-                    "City": city,
-                    "Date": date,
-                    "Temperature (C)": tempC,
-                    "Temperature (F)": tempF,
-                    "Weather Summary": summary
-                }, { typecast: true });
-                console.log(`Record created successfully for ${city}:`, result);
+                const results = await table.create(batch, { typecast: true });
+                results.forEach(result => {
+                    console.log(`Record created successfully for ${result.fields.City}:`, result);
+                });
             } catch (err) {
-                console.error(`Failed to create record for ${city}:`, err);
+                console.error('Failed to create records in batch:', err);
                 // Optionally, handle specific retry logic here
             }
         }
@@ -93,6 +104,7 @@ async function syncSheetsToAirtable() {
         console.error('Failed to retrieve or sync data to Airtable:', error);
     }
 }
+
 
 
 fetchWeatherAndUpdateSheet().catch(console.error);
