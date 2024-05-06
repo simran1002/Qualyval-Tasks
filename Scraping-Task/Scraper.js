@@ -14,7 +14,21 @@ async function scrapeData(url) {
         const results = await page.evaluate(() => {
             const listings = [];
             document.querySelectorAll(".propertyCard-wrapper").forEach(property => {
-                const propertyType = property.querySelector(".property-information")?.innerText.trim() ?? 'Property Type Unavailable';
+                const propertyInfo = property.querySelector(".property-information")?.innerText.trim() ?? 'Property Type Unavailable';
+
+                // Initialize default values
+                let propertyType = 'Type Unavailable', bedrooms = 'Bedrooms Unavailable', bathrooms = 'Bathrooms Unavailable';
+
+                // Handling multiline property information
+                if (propertyInfo !== 'Property Type Unavailable') {
+                    const lines = propertyInfo.split('\n');
+                    propertyType = lines[0];
+                    if (lines.length >= 3) {
+                        bedrooms = `${lines[1]} bedrooms`;
+                        bathrooms = `${lines[2]} bathrooms`;
+                    }
+                }
+
                 const address = property.querySelector("address.propertyCard-address.property-card-updates")?.innerText ?? 'Address Unavailable';
                 const description = property.querySelector(".propertyCard-description span")?.innerText ?? 'Description Unavailable';
                 const price = property.querySelector(".propertyCard-priceValue")?.innerText ?? 'Price Unavailable';
@@ -25,10 +39,10 @@ async function scrapeData(url) {
                 const agentName = property.querySelector(".propertyCard-branchSummary-branchName")?.innerText.trim() ?? 'Agent Name Unavailable';
                 const agentPhone = property.querySelector(".propertyCard-contactsPhoneNumber")?.innerText ?? 'Agent Phone Unavailable';
 
-                const listingAgent = property.querySelector(".propertyCard-branchSummary")?.innerText ?? 'Listing Agent Unavailable';
-
                 listings.push({
                     propertyType,
+                    bedrooms,
+                    bathrooms,
                     address,
                     description,
                     price,
@@ -38,8 +52,7 @@ async function scrapeData(url) {
                         name: agentName,
                         logo: agentLogo,
                         phone: agentPhone
-                    },
-                    listingAgent // Extracted listing agent information
+                    }
                 });
             });
 
