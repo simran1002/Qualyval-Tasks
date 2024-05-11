@@ -10,9 +10,11 @@ async function scrapeData(url) {
         document.querySelectorAll("div.agentCard_cardContent__Iepiw").forEach(property => {
             // Extract details from each property card
             const address = property.querySelector("a.ksc_link.default")?.innerText.trim() ?? 'Address Unavailable';
+            const description = property.querySelector("p.agentCard_cardDescription__LeHIZ")?.innerText.trim() ?? 'Type Unavailable';
+            const lettingsContactNumber = property.querySelector("span.agentTelephoneNumbers_number__kO7Oi")?.innerText.trim() ?? 'Type Unavailable';
             // const sale = property.querySelector("span.agentTelephoneNumbers_number__kO7Oi")?.innerText.trim() ?? 'Type Unavailable';
-            // const lettingsContactNumber = property.querySelector("span.agentTelephoneNumbers_number__kO7Oi")?.innerText.trim() ?? 'Type Unavailable';
-            // const description = property.querySelector("p.agentCard_cardDescription__LeHIZ")?.innerText.trim() ?? 'Type Unavailable';
+           
+            
             
 
             // Sale history, assuming it's contained within a table or similar structure
@@ -30,6 +32,8 @@ async function scrapeData(url) {
                 agentName,
                 agentPhone,
                 address,
+                description,
+                lettingsContactNumber,
                 // typeOfProperty,
                 // Price,
                 sales
@@ -47,7 +51,7 @@ function aggregateByAgent(listings) {
     const agentData = {};
 
     listings.forEach(listing => {
-        const { agentName, agentPhone, address, sales } = listing;
+        const { agentName, agentPhone, address,description,lettingsContactNumber, sales } = listing;
         if (!agentData[agentName]) {
             agentData[agentName] = {
                 agentPhone,
@@ -56,6 +60,8 @@ function aggregateByAgent(listings) {
         }
         agentData[agentName].properties.push({
             address,
+            description,
+            lettingsContactNumber,
             sales
         });
     });
