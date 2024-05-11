@@ -7,25 +7,32 @@ async function scrapeData(url) {
 
     const results = await page.evaluate(() => {
         const listings = [];
-        document.querySelectorAll(".propertyCard").forEach(property => {
+        document.querySelectorAll("div.agentCard_cardContent__Iepiw").forEach(property => {
             // Extract details from each property card
-            const propertyHistory = property.querySelector(".propertyCard-content")?.innerText ?? 'History Unavailable';
-            const soldPrice = property.querySelector(".sold-price")?.innerText ?? 'Sold Price Unavailable';
-            const tenure = property.querySelector(".tenure")?.innerText ?? 'Tenure Unavailable';
+            const address = property.querySelector("a.ksc_link.default")?.innerText.trim() ?? 'Address Unavailable';
+            // const sale = property.querySelector("span.agentTelephoneNumbers_number__kO7Oi")?.innerText.trim() ?? 'Type Unavailable';
+            // const lettingsContactNumber = property.querySelector("span.agentTelephoneNumbers_number__kO7Oi")?.innerText.trim() ?? 'Type Unavailable';
+            // const description = property.querySelector("p.agentCard_cardDescription__LeHIZ")?.innerText.trim() ?? 'Type Unavailable';
+            
 
-            const agentName = property.querySelector(".propertyCard-branchName")?.innerText.trim() ?? 'Agent Name Unavailable';
-            const agentPhone = property.querySelector(".propertyCard-phoneNumber")?.innerText ?? 'Agent Phone Unavailable';
-            const propertyName = property.querySelector(".property-information")?.innerText ?? 'Property Name Unavailable';
+            // Sale history, assuming it's contained within a table or similar structure
+            const sales = Array.from(property.querySelectorAll("h2._2csOLVQ8LhWp0He2y-z84U")).map(record => ({
+                dateSold: record.querySelector(".transaction-table-container")?.innerText ?? 'Date Unavailable',
+                percentChange: record.querySelector(".percentChange")?.innerText ?? 'Change Unavailable',
+                soldPrice: record.querySelector("h2._2csOLVQ8LhWp0He2y-z84U")?.innerText ?? 'Price Unavailable',
+                tenure: record.querySelector(".tenure")?.innerText ?? 'Tenure Unavailable'
+            }));
+
+            const agentName = property.querySelector(".property")?.innerText.trim() ?? 'Agent Name Unavailable';
+            const agentPhone = property.querySelector(".propertyCard-agentPhone")?.innerText ?? 'Agent Phone Unavailable';
 
             listings.push({
                 agentName,
                 agentPhone,
-                propertyName,
-                propertyDetails: {
-                    propertyHistory,
-                    soldPrice,
-                    tenure
-                }
+                address,
+                // typeOfProperty,
+                // Price,
+                sales
             });
         });
 
@@ -40,7 +47,7 @@ function aggregateByAgent(listings) {
     const agentData = {};
 
     listings.forEach(listing => {
-        const { agentName, agentPhone, propertyName, propertyDetails } = listing;
+        const { agentName, agentPhone, address, sales } = listing;
         if (!agentData[agentName]) {
             agentData[agentName] = {
                 agentPhone,
@@ -48,8 +55,8 @@ function aggregateByAgent(listings) {
             };
         }
         agentData[agentName].properties.push({
-            propertyName,
-            propertyDetails
+            address,
+            sales
         });
     });
 
@@ -58,7 +65,7 @@ function aggregateByAgent(listings) {
 
 async function main() {
     try {
-        const url = "https://www.rightmove.co.uk/house-prices/milton-keynes.html?page=1";
+        const url = "https://www.rightmove.co.uk/estate-agents/find.html?radius=0.0&locationIdentifier=REGION^940&brandName=&branchType=ALL";
         const scrapedData = await scrapeData(url);
         const aggregatedData = aggregateByAgent(scrapedData);
 
